@@ -290,6 +290,9 @@ importers:
       '@acme/db':
         specifier: workspace:*
         version: link:../db
+      '@acme/db-zenstack':
+        specifier: workspace:*
+        version: link:../db-zenstack
       '@acme/validators':
         specifier: workspace:*
         version: link:../validators
