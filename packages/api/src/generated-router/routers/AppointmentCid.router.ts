@@ -5,6 +5,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
+import type { TRPCRouterRecord } from "@trpc/server";
 import * as _Schema from "@zenstackhq/runtime/zod/input";
 
 import { db } from ".";

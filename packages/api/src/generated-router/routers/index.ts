@@ -5,7 +5,10 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import type { AnyTRPCRouter as AnyRouter } from "@trpc/server";
+import type {
+  AnyTRPCRouter as AnyRouter,
+  TRPCRouterRecord,
+} from "@trpc/server";
 import type { PrismaClient } from "@zenstackhq/runtime/models";
 
 import { createTRPCRouter } from "../../trpc";
