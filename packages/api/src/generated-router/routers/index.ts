@@ -7,21 +7,73 @@
 
 import type { AnyTRPCRouter as AnyRouter } from "@trpc/server";
 import type { PrismaClient } from "@zenstackhq/runtime/models";
+
 import { createTRPCRouter } from "../../trpc";
+import createAccountRouter from "./Account.router";
+import createAllergiesRouter from "./Allergies.router";
+import createAllergiesValuesRouter from "./AllergiesValues.router";
+import createAppointmentRouter from "./Appointment.router";
+import createAppointmentCidRouter from "./AppointmentCid.router";
+import createAssetRouter from "./Asset.router";
+import createCidRouter from "./Cid.router";
+import createComorbiditiesRouter from "./Comorbidities.router";
+import createComorbiditiesValuesRouter from "./ComorbiditiesValues.router";
+import createDefaultObjectiveInformationRouter from "./DefaultObjectiveInformation.router";
+import createEventCalendarRouter from "./EventCalendar.router";
+import createExamResultsRouter from "./ExamResults.router";
+import createExamResultsValuesRouter from "./ExamResultsValues.router";
+import createHealthPlansRouter from "./HealthPlans.router";
+import createHealthPlansValuesRouter from "./HealthPlansValues.router";
+import createInvitationRouter from "./Invitation.router";
+import createMedicationsRouter from "./Medications.router";
+import createMedicationsValuesRouter from "./MedicationsValues.router";
+import createMemberRouter from "./Member.router";
+import createOrganizationRouter from "./Organization.router";
+import createPatientRouter from "./Patient.router";
+import createSessionRouter from "./Session.router";
+import createSurgeriesRouter from "./Surgeries.router";
+import createSurgeriesValuesRouter from "./SurgeriesValues.router";
 import createUserRouter from "./User.router";
-import createPostRouter from "./Post.router";
+import createVaccinationsRouter from "./Vaccinations.router";
+import createVaccinationsValuesRouter from "./VaccinationsValues.router";
+import createVerificationRouter from "./Verification.router";
 
 export function db(ctx: any) {
-    if (!ctx.prisma) {
-        throw new Error('Missing "prisma" field in trpc context');
-    }
-    return ctx.prisma as PrismaClient;
+  if (!ctx.prisma) {
+    throw new Error('Missing "prisma" field in trpc context');
+  }
+  return ctx.prisma as PrismaClient;
 }
 
 export function createRouter() {
-    return createTRPCRouter({
-        user: createUserRouter(),
-        post: createPostRouter(),
-    }
-    );
+  return createTRPCRouter({
+    user: createUserRouter(),
+    asset: createAssetRouter(),
+    session: createSessionRouter(),
+    account: createAccountRouter(),
+    verification: createVerificationRouter(),
+    organization: createOrganizationRouter(),
+    member: createMemberRouter(),
+    invitation: createInvitationRouter(),
+    cid: createCidRouter(),
+    appointmentCid: createAppointmentCidRouter(),
+    appointment: createAppointmentRouter(),
+    patient: createPatientRouter(),
+    vaccinations: createVaccinationsRouter(),
+    vaccinationsValues: createVaccinationsValuesRouter(),
+    allergies: createAllergiesRouter(),
+    allergiesValues: createAllergiesValuesRouter(),
+    medications: createMedicationsRouter(),
+    medicationsValues: createMedicationsValuesRouter(),
+    examResults: createExamResultsRouter(),
+    examResultsValues: createExamResultsValuesRouter(),
+    comorbidities: createComorbiditiesRouter(),
+    comorbiditiesValues: createComorbiditiesValuesRouter(),
+    surgeries: createSurgeriesRouter(),
+    surgeriesValues: createSurgeriesValuesRouter(),
+    healthPlans: createHealthPlansRouter(),
+    healthPlansValues: createHealthPlansValuesRouter(),
+    defaultObjectiveInformation: createDefaultObjectiveInformationRouter(),
+    eventCalendar: createEventCalendarRouter(),
+  } satisfies TRPCRouterRecord);
 }

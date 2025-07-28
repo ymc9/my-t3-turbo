@@ -12,22 +12,491 @@ generator client {
   provider = "prisma-client-js"
 }
 
-/// User model
-model User {
-  id       String @id() @default(cuid())
-  email    String @unique()
-  password String
-  posts    Post[]
+enum UserRole {
+  admin
+  user
 }
 
-/// Post model
-model Post {
-  id        String   @id() @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt()
-  title     String
-  content   String
-  published Boolean  @default(false)
-  author    User     @relation(fields: [authorId], references: [id])
-  authorId  String
+enum MemberRole {
+  owner
+  admin
+  secretary
+  patient
+  member
+}
+
+enum AppointmentCategory {
+  NORMAL
+  FOLLOW_UP
+}
+
+enum AppointmentStatus {
+  PENDING
+  ONGOING
+  CONFIRMED
+  CANCELLED
+  RESCHEDULED
+  COMPLETED
+  NO_SHOW
+}
+
+enum Sex {
+  male
+  female
+}
+
+enum Race {
+  black
+  brown
+  white
+  yellow
+  indigenous
+}
+
+enum CivilStatus {
+  single
+  married
+  separated
+  divorced
+  widowed
+}
+
+enum BloodType {
+  a_positive
+  a_negative
+  b_positive
+  b_negative
+  ab_positive
+  ab_negative
+  o_positive
+  o_negative
+}
+
+enum GenderIdentity {
+  cisgender
+  transgender
+  non_binary
+}
+
+enum EventCalendarType {
+  APPOINTMENT
+  APPOINTMENT_FOLLOW_UP
+  CONSULTATION
+  SURGERY
+  EXAM
+  MEETING
+  OTHER
+}
+
+model User {
+  id              String       @id() @default(nanoid())
+  name            String
+  email           String
+  emailVerified   Boolean
+  image           String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt()
+  sessions        Session[]
+  accounts        Account[]
+  members         Member[]
+  invitations     Invitation[]
+  username        String?
+  displayUsername String?
+  role            UserRole?    @default(user)
+  banned          Boolean?
+  banReason       String?
+  banExpires      DateTime?
+  changePassword  Boolean?     @default(false)
+  patientUser     Patient[]    @relation("patientUser")
+  createdAssets   Asset[]      @relation("createdAssets")
+  updatedAssets   Asset[]      @relation("updatedAssets")
+  deletedAssets   Asset[]      @relation("deletedAssets")
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Asset {
+  id                                       String                       @id() @default(nanoid())
+  type                                     String
+  createdAt                                DateTime                     @default(now())
+  createdById                              String?
+  createdByUser                            User?                        @relation("createdAssets", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedAt                                DateTime                     @updatedAt()
+  updatedById                              String?
+  updatedByUser                            User?                        @relation("updatedAssets", fields: [updatedById], references: [id], onDelete: SetNull)
+  deletedAt                                DateTime?
+  deletedById                              String?
+  deletedByUser                            User?                        @relation("deletedAssets", fields: [deletedById], references: [id], onDelete: SetNull)
+  deleted                                  Boolean                      @default(false)
+  organizationId                           String?
+  organization                             Organization?                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  delegate_aux_appointmentCid              AppointmentCid?
+  delegate_aux_appointment                 Appointment?
+  delegate_aux_patient                     Patient?
+  delegate_aux_vaccinations                Vaccinations?
+  delegate_aux_allergies                   Allergies?
+  delegate_aux_medications                 Medications?
+  delegate_aux_examResults                 ExamResults?
+  delegate_aux_comorbidities               Comorbidities?
+  delegate_aux_surgeries                   Surgeries?
+  delegate_aux_healthPlans                 HealthPlans?
+  delegate_aux_defaultObjectiveInformati_0 DefaultObjectiveInformation?
+  delegate_aux_eventCalendar               EventCalendar?
+
+  @@map("asset")
+}
+
+model Session {
+  id                   String   @id() @default(nanoid())
+  expiresAt            DateTime
+  token                String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt()
+  ipAddress            String?
+  userAgent            String?
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  impersonatedBy       String?
+  activeOrganizationId String?
+
+  @@unique([token])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id() @default(nanoid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt()
+
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id() @default(nanoid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt()
+
+  @@map("verification")
+}
+
+model Organization {
+  id          String       @id() @default(nanoid())
+  name        String
+  slug        String?
+  logo        String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt()
+  metadata    String?
+  members     Member[]
+  invitations Invitation[]
+  assets      Asset[]
+
+  @@unique([slug])
+  @@map("organization")
+}
+
+model Member {
+  id             String       @id() @default(nanoid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt()
+
+  @@map("member")
+}
+
+model Invitation {
+  id             String       @id() @default(nanoid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  role           String?
+  status         String
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime?    @updatedAt()
+  inviterId      String
+  user           User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@map("invitation")
+}
+
+model Cid {
+  id             String           @id() @default(nanoid())
+  code           String
+  description    String
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime?        @updatedAt()
+  appointmentCid AppointmentCid[]
+
+  @@unique([code])
+  @@index([code])
+  @@map("cid")
+}
+
+model AppointmentCid {
+  id                 String      @id()
+  appointmentId      String
+  appointment        Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  cidId              String
+  cid                Cid         @relation(fields: [cidId], references: [id], onDelete: Cascade)
+  delegate_aux_asset Asset       @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([appointmentId, cidId])
+  @@map("appointment_cid")
+}
+
+model Appointment {
+  id                  String               @id()
+  motive              String
+  subjective          String
+  objective           String
+  evaluation          String
+  plan                String
+  startDate           DateTime?
+  endDate             DateTime?
+  sickNoteDays        Int?
+  category            AppointmentCategory?
+  status              AppointmentStatus?
+  followUpId          String?              @unique()
+  followUp            Appointment?         @relation("FollowUpAppointment", fields: [followUpId], references: [id])
+  predecessorFollowUp Appointment?         @relation("FollowUpAppointment")
+  cids                AppointmentCid[]
+  allergies           Allergies[]
+  medications         Medications[]
+  comorbidities       Comorbidities[]
+  patientId           String
+  patient             Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  eventCalendar       EventCalendar?
+  delegate_aux_asset  Asset                @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("appointment")
+}
+
+model Patient {
+  id                 String          @id()
+  name               String
+  cpf                String
+  cellphone          String
+  email              String
+  sex                Sex?
+  responsible        String?
+  nationality        String
+  race               Race?
+  state              String
+  city               String
+  zipcode            String
+  neighborhood       String
+  street             String
+  number             String
+  complement         String?
+  occupation         String
+  sexualOrientation  String?
+  civilStatus        CivilStatus?
+  bloodType          BloodType?
+  genderIdentity     GenderIdentity?
+  password           String?
+  userId             String?
+  user               User?           @relation("patientUser", fields: [userId], references: [id])
+  appointments       Appointment[]
+  vaccinations       Vaccinations[]
+  allergies          Allergies[]
+  medications        Medications[]
+  examResults        ExamResults[]
+  comorbidities      Comorbidities[]
+  surgeries          Surgeries[]
+  healthPlans        HealthPlans[]
+  delegate_aux_asset Asset           @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("patient")
+}
+
+model Vaccinations {
+  id                   String             @id()
+  patientId            String
+  patient              Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  vaccinationsValuesId String
+  vaccinationsValues   VaccinationsValues @relation(fields: [vaccinationsValuesId], references: [id], onDelete: Cascade)
+  delegate_aux_asset   Asset              @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("vaccinations")
+}
+
+model VaccinationsValues {
+  id           String         @id() @default(nanoid())
+  value        String         @unique()
+  createdAt    DateTime       @default(now())
+  vaccinations Vaccinations[]
+
+  @@map("vaccinations_values")
+}
+
+model Allergies {
+  id                 String          @id()
+  patientId          String?
+  patient            Patient?        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  allergiesValuesId  String
+  allergiesValues    AllergiesValues @relation(fields: [allergiesValuesId], references: [id], onDelete: Cascade)
+  appointmentId      String?
+  appointment        Appointment?    @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  delegate_aux_asset Asset           @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("allergies")
+}
+
+model AllergiesValues {
+  id        String      @id() @default(nanoid())
+  value     String      @unique()
+  createdAt DateTime    @default(now())
+  allergies Allergies[]
+
+  @@map("allergies_values")
+}
+
+model Medications {
+  id                  String            @id()
+  patientId           String?
+  patient             Patient?          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  medicationsValuesId String
+  medicationsValues   MedicationsValues @relation(fields: [medicationsValuesId], references: [id], onDelete: Cascade)
+  appointmentId       String?
+  appointment         Appointment?      @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  delegate_aux_asset  Asset             @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("medications")
+}
+
+model MedicationsValues {
+  id          String        @id() @default(nanoid())
+  value       String        @unique()
+  createdAt   DateTime      @default(now())
+  medications Medications[]
+
+  @@map("medications_values")
+}
+
+model ExamResults {
+  id                  String            @id()
+  patientId           String
+  patient             Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  examResultsValuesId String
+  examResultsValues   ExamResultsValues @relation(fields: [examResultsValuesId], references: [id], onDelete: Cascade)
+  result              String
+  date                DateTime
+  delegate_aux_asset  Asset             @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("exam_results")
+}
+
+model ExamResultsValues {
+  id          String        @id() @default(nanoid())
+  value       String        @unique()
+  createdAt   DateTime      @default(now())
+  examResults ExamResults[]
+
+  @@map("exam_results_values")
+}
+
+model Comorbidities {
+  id                    String              @id()
+  patientId             String?
+  patient               Patient?            @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  comorbiditiesValuesId String
+  comorbiditiesValues   ComorbiditiesValues @relation(fields: [comorbiditiesValuesId], references: [id], onDelete: Cascade)
+  appointmentId         String?
+  appointment           Appointment?        @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  delegate_aux_asset    Asset               @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("comorbidities")
+}
+
+model ComorbiditiesValues {
+  id            String          @id() @default(nanoid())
+  value         String          @unique()
+  createdAt     DateTime        @default(now())
+  comorbidities Comorbidities[]
+
+  @@map("comorbidities_values")
+}
+
+model Surgeries {
+  id                 String          @id()
+  patientId          String
+  patient            Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  surgeriesValuesId  String
+  surgeriesValues    SurgeriesValues @relation(fields: [surgeriesValuesId], references: [id], onDelete: Cascade)
+  delegate_aux_asset Asset           @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("surgeries")
+}
+
+model SurgeriesValues {
+  id        String      @id() @default(nanoid())
+  value     String      @unique()
+  createdAt DateTime    @default(now())
+  surgeries Surgeries[]
+
+  @@map("surgeries_values")
+}
+
+model HealthPlans {
+  id                  String            @id()
+  patientId           String
+  patient             Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  healthPlansValuesId String
+  healthPlansValues   HealthPlansValues @relation(fields: [healthPlansValuesId], references: [id], onDelete: Cascade)
+  delegate_aux_asset  Asset             @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("health_plans")
+}
+
+model HealthPlansValues {
+  id          String        @id() @default(nanoid())
+  value       String        @unique()
+  createdAt   DateTime      @default(now())
+  healthPlans HealthPlans[]
+
+  @@map("health_plans_values")
+}
+
+model DefaultObjectiveInformation {
+  id                 String  @id()
+  text               String?
+  delegate_aux_asset Asset   @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("default_objective_information")
+}
+
+model EventCalendar {
+  id                 String             @id()
+  title              String
+  description        String?
+  start              DateTime
+  end                DateTime
+  allDay             Boolean?           @default(false)
+  eventType          EventCalendarType?
+  rrule              String?
+  appointmentId      String?            @unique()
+  appointment        Appointment?       @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  delegate_aux_asset Asset              @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("event_calendar")
 }
